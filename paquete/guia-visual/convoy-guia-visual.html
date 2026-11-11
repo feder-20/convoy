@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Convoy · Guía visual</title>
+<style>
+:root{
+  --ink:#111111; --ink-2:#333333; --ink-secondary:#4A4A4A; --ink-tertiary:#5C5C5C;
+  --border:#E6E6E6; --border-strong:#CFCFCF; --surface:#FAFAFA; --surface-2:#F2F2F2; --track:#EBEBEB;
+  --bg:#FFFFFF; --canvas:#EDEDED; --warning:#8A4B00;
+  --r-control:9px; --r-button:10px; --r-panel:14px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45}
+main{max-width:1180px;margin:0 auto;padding:48px 16px 80px}
+h1{font-size:30px;letter-spacing:-0.02em;margin:0}
+h2{font-size:20px;margin:56px 0 6px;letter-spacing:-0.01em}
+.lead{color:var(--ink-secondary);margin:6px 0 0;max-width:720px}
+.sub{color:var(--ink-secondary);margin:0 0 20px;max-width:760px}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-tertiary)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.card{border:1px solid var(--border);border-radius:12px;padding:16px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--ink-secondary)}
+table{border-collapse:collapse;width:100%}
+td,th{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-tertiary)}
+/* Componentes */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:var(--r-button);font:600 14px var(--font);border:0;cursor:pointer}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-secondary{background:#fff;color:var(--ink);border:1px solid #DADADA;font-weight:500}
+.btn[disabled]{opacity:.35;cursor:not-allowed}
+.input{width:100%;padding:10px 12px;border-radius:var(--r-control);border:1px solid var(--border-strong);font:15px var(--font);color:var(--ink);background:#fff}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span,.field>label{font-size:12px;font-weight:600;color:var(--ink-secondary)}
+.seg{display:inline-flex;padding:3px;gap:3px;border-radius:9px;background:var(--track)}
+.seg button{padding:7px 14px;border:0;border-radius:7px;background:transparent;font:13px var(--font);color:var(--ink-secondary)}
+.seg button[aria-selected=true]{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.tpl{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;border:1px solid #E3E3E3;background:#fff;font:13px var(--font);width:100%}
+.tpl small{color:var(--ink-tertiary);font-size:12px}
+.tpl.sel{border:1.5px solid var(--ink);background:#F4F4F4;font-weight:600}
+.row{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-bottom:1px solid #F0F0F0}
+.row .nn{width:24px;font-size:12px;color:var(--ink-tertiary)}
+.row .name{flex:1;font-size:13px}
+.icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid #E3E3E3;background:#fff;display:flex;align-items:center;justify-content:center}
+.tree{display:flex;flex-direction:column;gap:2px;margin-left:8px;padding-left:10px;border-left:1px solid #DADADA}
+.tree div{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;color:#222}
+.tree .sub{padding-left:24px;font-size:12px;color:var(--ink-secondary);margin:0}
+.status{padding:12px;border-radius:10px;background:var(--surface-2);border:1px solid #DADADA}
+/* Pantallas */
+.screen{background:var(--canvas);border-radius:16px;padding:24px;overflow-x:auto}
+.window{width:852px;background:#fff;border:1px solid #DCDCDC;border-radius:var(--r-panel);box-shadow:0 12px 32px rgba(0,0,0,.10);overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #EEE}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-.02em}
+.brand .tile{width:28px;height:28px;border-radius:8px;background:var(--ink);display:flex;align-items:center;justify-content:center}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));min-height:620px}
+.left{padding:20px;border-right:1px solid #EEE;display:flex;flex-direction:column;gap:18px}
+.right{padding:20px;background:var(--surface);display:flex;flex-direction:column;gap:12px}
+.menu{background:#fff;border:1px solid #D6D6D6;border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.14);padding:5px;font-size:13px}
+.menu div{padding:6px 10px;border-radius:6px}
+.menu .hl{background:var(--ink);color:#fff;font-weight:600;display:flex;justify-content:space-between}
+.menu hr{border:0;height:1px;background:#EBEBEB;margin:5px 4px}
+.note{font-size:13px;color:var(--ink-secondary);margin-top:10px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <mask id="cv-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+      <rect width="100" height="100" fill="#fff"/>
+      <rect x="24" y="42" width="44" height="7" rx="3.5" fill="#000"/>
+      <rect x="34" y="55" width="42" height="7" rx="3.5" fill="#000"/>
+      <rect x="34" y="68" width="30" height="7" rx="3.5" fill="#000"/>
+    </mask>
+    <symbol id="convoy" viewBox="10 16 80 68">
+      <path d="M12 25 Q12 18 19 18 L41.92 18 Q43.92 18 45.42 25.68 L46.92 30.8 L81 30.8 Q88 30.8 88 37.8 L88 75 Q88 82 81 82 L19 82 Q12 82 12 75 Z" fill="currentColor" mask="url(#cv-mask)"/>
+    </symbol>
+    <symbol id="folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+<main>
+  <div style="display:flex;align-items:center;gap:16px">
+    <svg width="56" height="48" style="color:var(--ink)" role="img" aria-label="Símbolo de Convoy"><use href="#convoy"/></svg>
+    <div>
+      <h1>Convoy · Guía visual</h1>
+      <p class="lead">Referencia de diseño para construir la app en SwiftUI: tokens, componentes y pantallas. Blanco, negro y grises; nada de color de acento.</p>
+    </div>
+  </div>
+
+  <h2>1. Marca</h2>
+  <p class="sub">Una carpeta con tres líneas escalonadas recortadas: la estructura que la app crea. El logo usa Inter Bold en minúsculas.</p>
+  <div class="grid g3">
+    <div class="card" style="display:flex;align-items:center;justify-content:center;gap:14px;height:150px">
+      <svg width="64" height="54" style="color:var(--ink)" aria-hidden="true"><use href="#convoy"/></svg>
+      <span style="font:700 46px Inter,var(--font);letter-spacing:-.03em">convoy</span>
+    </div>
+    <div class="card" style="background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;height:150px;border-color:var(--ink)">
+      <svg width="64" height="54" style="color:#fff" aria-hidden="true"><use href="#convoy"/></svg>
+      <span style="font:700 46px Inter,var(--font);letter-spacing:-.03em">convoy</span>
+    </div>
+    <div class="card" style="display:flex;align-items:center;justify-content:center;gap:20px;height:150px">
+      <div style="width:96px;height:96px;border-radius:22px;background:var(--ink);display:flex;align-items:center;justify-content:center;color:#fff"><svg width="54" height="46" aria-hidden="true"><use href="#convoy"/></svg></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span class="label">Barra de menú</span>
+        <svg width="18" height="16" style="color:var(--ink)" aria-hidden="true"><use href="#convoy"/></svg>
+        <span class="mono">Template Image 18 pt</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>2. Tokens</h2>
+  <p class="sub">Usar colores semánticos de macOS cuando existan (modo oscuro automático); estos valores son la referencia en modo claro.</p>
+  <div class="grid g5">
+    <div><div style="height:56px;border-radius:8px;background:#111111"></div><p class="mono">ink · #111111<br>texto, primario</p></div>
+    <div><div style="height:56px;border-radius:8px;background:#4A4A4A"></div><p class="mono">ink-secondary · #4A4A4A</p></div>
+    <div><div style="height:56px;border-radius:8px;background:#5C5C5C"></div><p class="mono">ink-tertiary · #5C5C5C</p></div>
+    <div><div style="height:56px;border-radius:8px;background:#E6E6E6"></div><p class="mono">border · #E6E6E6</p></div>
+    <div><div style="height:56px;border-radius:8px;background:#FAFAFA;border:1px solid #E6E6E6"></div><p class="mono">surface · #FAFAFA</p></div>
+  </div>
+  <table style="margin-top:12px">
+    <tr><th>Token</th><th>Valor</th><th>Uso</th></tr>
+    <tr><td>Tipografía</td><td>SF Pro (sistema): 16/700 títulos, 15/600 nombres, 14 cuerpo, 13 listas, 12 etiquetas, 11/600 mayúsculas</td><td>Fuente del sistema en la app; Inter solo en el logo</td></tr>
+    <tr><td>Espaciado</td><td>4 · 8 · 12 · 16 · 20 · 24</td><td>Márgenes del panel 20; entre bloques 18; entre filas 6–8</td></tr>
+    <tr><td>Radios</td><td>7 botones de ícono · 9 campos · 10 botones y tarjetas · 14 ventana</td><td></td></tr>
+    <tr><td>Bordes</td><td>1 px #E6E6E6; campos #CFCFCF; seleccionado 1,5 px #111111</td><td></td></tr>
+    <tr><td>Sombra</td><td>Ventana: 0 12 32 rgba(0,0,0,.10) · Menú: 0 10 28 rgba(0,0,0,.14)</td><td></td></tr>
+    <tr><td>Advertencia</td><td>#8A4B00 sobre blanco</td><td>Solo texto de aviso (caracteres reemplazados, ruta larga)</td></tr>
+  </table>
+
+  <h2>3. Componentes</h2>
+  <div class="grid g3">
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <span class="label">Botones</span>
+      <button class="btn btn-primary">Crear proyecto · 13 carpetas</button>
+      <button class="btn btn-secondary">Crear otro</button>
+      <button class="btn btn-primary" disabled>Crear proyecto</button>
+      <span class="mono">Altura mínima 44; deshabilitado al 35 %</span>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:14px">
+      <span class="label">Campos</span>
+      <div class="field"><label for="n">Nombre del proyecto</label><input id="n" class="input" value="Expansión Perú"></div>
+      <div class="field"><label for="r">Crear en</label><select id="r" class="input"><option>Documentos › Proyectos</option></select></div>
+      <span style="font-size:12px;color:var(--warning)">Se reemplazaron caracteres que Windows no permite.</span>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" checked style="accent-color:#111;width:18px;height:18px">Incluir el nombre del proyecto en cada carpeta</label>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <span class="label">Selección</span>
+      <div class="seg" role="tablist"><button role="tab" aria-selected="true">Nuevo proyecto</button><button role="tab" aria-selected="false">Plantillas</button></div>
+      <div class="tpl sel"><span>Proyecto</span><small>9 carpetas</small></div>
+      <div class="tpl"><span>Campaña</span><small>8 carpetas</small></div>
+      <div class="status"><strong style="font-size:14px">Proyecto creado</strong><br><span style="font-size:12px;color:var(--ink-secondary)">13 carpetas en Documentos › Proyectos</span></div>
+    </div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <span class="label">Fila del editor de plantilla</span>
+      <div style="border:1px solid var(--border);border-radius:10px;margin-top:10px;overflow:hidden">
+        <div class="row"><span class="nn">04</span><span class="name">Seguimiento</span>
+          <span class="icon-btn" aria-label="Subir"><svg width="14" height="14" style="color:#333"><use href="#up"/></svg></span>
+          <span class="icon-btn" aria-label="Bajar"><svg width="14" height="14" style="color:#333"><use href="#down"/></svg></span>
+          <span class="icon-btn" aria-label="Quitar"><svg width="14" height="14" style="color:#333"><use href="#x"/></svg></span></div>
+      </div>
+      <p class="note">En la app real: arrastrar para reordenar y anidar; los botones quedan como alternativa accesible por teclado.</p>
+    </div>
+    <div class="card">
+      <span class="label">Vista previa del árbol</span>
+      <div style="display:flex;align-items:center;gap:8px;font-weight:600;margin:10px 0 6px"><svg width="18" height="18" style="color:var(--ink)"><use href="#folder"/></svg>Expansión Perú</div>
+      <div class="tree">
+        <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>04_Expansión Perú_Seguimiento</div>
+        <div class="sub"><svg width="13" height="13" style="color:#5C5C5C"><use href="#folder"/></svg>Actas de reunion</div>
+        <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>05_Expansión Perú_Costos</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>4. Pantalla principal · Nuevo proyecto</h2>
+  <p class="sub">Ventana que abre el ícono de la barra de menú. Izquierda: datos; derecha: vista previa que se actualiza al escribir.</p>
+  <div class="screen"><div class="window">
+    <div class="topbar">
+      <div class="brand"><span class="tile"><svg width="18" height="16" style="color:#fff"><use href="#convoy"/></svg></span>convoy</div>
+      <div class="seg"><button aria-selected="true">Nuevo proyecto</button><button aria-selected="false">Plantillas</button></div>
+    </div>
+    <div class="cols">
+      <div class="left">
+        <div class="field"><label>Nombre del proyecto</label><input class="input" value="Expansión Perú"></div>
+        <div class="field"><span>Plantilla</span>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="tpl sel"><span>Proyecto</span><small>9 carpetas</small></div>
+            <div class="tpl"><span>Campaña</span><small>8 carpetas</small></div>
+            <div class="tpl"><span>Tecnología</span><small>10 carpetas</small></div>
+          </div></div>
+        <div class="field"><label>Crear en</label><select class="input" style="font-size:14px"><option>Documentos › Proyectos</option></select></div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" checked style="accent-color:#111;width:18px;height:18px">Incluir el nombre del proyecto en cada carpeta</label>
+        <button class="btn btn-primary" style="margin-top:auto">Crear proyecto · 13 carpetas</button>
+      </div>
+      <div class="right">
+        <div style="display:flex;justify-content:space-between"><span class="label">Vista previa</span><span style="font-size:12px;color:var(--ink-tertiary)">Documentos › Proyectos</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-weight:600"><svg width="18" height="18" style="color:var(--ink)"><use href="#folder"/></svg>Expansión Perú</div>
+        <div class="tree">
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>01_Expansión Perú_Acta de constitucion</div>
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>02_Expansión Perú_Stakeholders</div>
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>03_Expansión Perú_Planeacion</div>
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>04_Expansión Perú_Seguimiento</div>
+          <div class="sub"><svg width="13" height="13" style="color:#5C5C5C"><use href="#folder"/></svg>Actas de reunion</div>
+          <div class="sub"><svg width="13" height="13" style="color:#5C5C5C"><use href="#folder"/></svg>Informes de avance</div>
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>05_Expansión Perú_Costos</div>
+          <div class="sub"><svg width="13" height="13" style="color:#5C5C5C"><use href="#folder"/></svg>Cotizaciones</div>
+          <div class="sub"><svg width="13" height="13" style="color:#5C5C5C"><use href="#folder"/></svg>Facturas</div>
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>06_Expansión Perú_Contratos y proveedores</div>
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>07_Expansión Perú_Entregables</div>
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>08_Expansión Perú_Riesgos</div>
+          <div><svg width="15" height="15" style="color:#4A4A4A"><use href="#folder"/></svg>09_Expansión Perú_Cierre</div>
+        </div>
+        <div style="margin-top:auto;font-size:12px;color:var(--ink-secondary)">Ruta más larga: 112 caracteres · límite seguro para Windows: 200</div>
+      </div>
+    </div>
+  </div></div>
+
+  <h2>5. Pantalla · Plantillas</h2>
+  <p class="sub">Misma ventana, pestaña Plantillas. La vista previa de la derecha sigue visible y refleja cada cambio.</p>
+  <div class="screen"><div class="window">
+    <div class="topbar">
+      <div class="brand"><span class="tile"><svg width="18" height="16" style="color:#fff"><use href="#convoy"/></svg></span>convoy</div>
+      <div class="seg"><button aria-selected="false">Nuevo proyecto</button><button aria-selected="true">Plantillas</button></div>
+    </div>
+    <div class="cols" style="min-height:520px">
+      <div class="left">
+        <div><strong style="font-size:16px">Editar plantilla</strong><br><span style="font-size:12px;color:var(--ink-secondary)">Los cambios se guardan solos y se ven a la derecha.</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span style="padding:7px 12px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:600">Proyecto</span>
+          <span style="padding:7px 12px;border-radius:999px;border:1px solid #DADADA;font-size:12px">Campaña</span>
+          <span style="padding:7px 12px;border-radius:999px;border:1px solid #DADADA;font-size:12px">Tecnología</span>
+          <span style="padding:7px 12px;border-radius:999px;border:1px dashed #9E9E9E;font-size:12px">+ Duplicar como nueva</span>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div class="row"><span class="nn">01</span><span class="name">Acta de constitucion</span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#up"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#down"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#x"/></svg></span></div>
+          <div class="row"><span class="nn">02</span><span class="name">Stakeholders</span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#up"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#down"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#x"/></svg></span></div>
+          <div class="row"><span class="nn">03</span><span class="name">Planeacion</span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#up"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#down"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#x"/></svg></span></div>
+          <div class="row"><span class="nn">04</span><span class="name">Seguimiento</span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#up"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#down"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#x"/></svg></span></div>
+          <div class="row" style="border-bottom:0"><span class="nn">05</span><span class="name">Costos</span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#up"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#down"/></svg></span><span class="icon-btn"><svg width="14" height="14" style="color:#333"><use href="#x"/></svg></span></div>
+        </div>
+        <div style="display:flex;gap:8px"><input class="input" placeholder="Nueva carpeta, ej.: Riesgos" style="font-size:14px"><button class="btn btn-primary" style="padding:10px 14px;font-size:13px">Agregar</button></div>
+      </div>
+      <div class="right">
+        <span class="label">Vista previa</span>
+        <p class="note" style="margin:0">Igual que en la pantalla principal.</p>
+      </div>
+    </div>
+  </div></div>
+
+  <h2>6. Integración con Finder</h2>
+  <p class="sub">Clic derecho sobre una carpeta o el fondo de una ventana: "Nuevo proyecto con Convoy" y el submenú de plantillas. Al elegir una, solo se pide el nombre.</p>
+  <div class="screen" style="display:flex;gap:16px;align-items:flex-start">
+    <div class="menu" style="width:270px">
+      <div>Nueva carpeta</div><div>Obtener información</div><hr>
+      <div class="hl"><span style="display:flex;gap:8px;align-items:center"><svg width="16" height="14" style="color:#fff"><use href="#convoy"/></svg>Nuevo proyecto con Convoy</span><span>›</span></div><hr>
+      <div>Ordenar por</div>
+    </div>
+    <div class="menu" style="width:190px;margin-top:62px">
+      <div class="label" style="padding:4px 10px">Plantillas</div>
+      <div style="background:#F0F0F0;font-weight:600">Proyecto</div><div>Campaña</div><div>Tecnología</div><hr><div>Editar plantillas…</div>
+    </div>
+  </div>
+
+  <h2>7. Estados y textos</h2>
+  <table>
+    <tr><th>Situación</th><th>Comportamiento</th><th>Texto</th></tr>
+    <tr><td>Sin nombre</td><td>Botón deshabilitado; la vista previa muestra un marcador</td><td>"Nombre del proyecto"</td></tr>
+    <tr><td>Caracteres no válidos</td><td>Se reemplazan por guion y se avisa</td><td>"Se reemplazaron caracteres que Windows no permite."</td></tr>
+    <tr><td>Ruta larga</td><td>Aviso por encima de 200 caracteres; bloqueo por encima de 400</td><td>"La ruta más larga tiene 214 caracteres. Algunas apps de Windows no abren archivos con rutas de más de 260."</td></tr>
+    <tr><td>Ya existe</td><td>No se crea nada; se ofrece abrir la existente</td><td>"Ya hay una carpeta llamada «Expansión Perú» aquí."</td></tr>
+    <tr><td>Sin permiso</td><td>Se pide acceso a la carpeta con el panel del sistema</td><td>"Convoy necesita permiso para crear carpetas en Documentos."</td></tr>
+    <tr><td>Éxito</td><td>Confirmación, "Mostrar en Finder" y "Crear otro"</td><td>"Proyecto creado · 13 carpetas en Documentos › Proyectos"</td></tr>
+  </table>
+</main>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "nombre": "Convoy",
+  "version": 1,
+  "color": {
+    "ink": "#111111",
+    "inkSecondary": "#4A4A4A",
+    "inkTertiary": "#5C5C5C",
+    "inkBody": "#333333",
+    "border": "#E6E6E6",
+    "borderControl": "#CFCFCF",
+    "borderSelected": { "color": "#111111", "width": 1.5 },
+    "surface": "#FAFAFA",
+    "surfaceSelected": "#F4F4F4",
+    "surfaceStatus": "#F2F2F2",
+    "segmentedTrack": "#EBEBEB",
+    "background": "#FFFFFF",
+    "warningText": "#8A4B00",
+    "nota": "En modo oscuro usar colores semánticos de macOS (labelColor, secondaryLabelColor, separatorColor, controlBackgroundColor)."
+  },
+  "tipografia": {
+    "app": "Fuente del sistema (SF Pro)",
+    "logo": "Inter Bold, minúsculas, tracking -0.02em",
+    "escala": {
+      "titulo": { "size": 16, "weight": 700 },
+      "nombre": { "size": 15, "weight": 600 },
+      "cuerpo": { "size": 14, "weight": 400 },
+      "lista": { "size": 13, "weight": 400 },
+      "etiqueta": { "size": 12, "weight": 600 },
+      "seccion": { "size": 11, "weight": 600, "uppercase": true, "tracking": 0.06 }
+    }
+  },
+  "espaciado": [4, 8, 12, 16, 20, 24],
+  "radios": { "botonIcono": 7, "campo": 9, "boton": 10, "tarjeta": 10, "ventana": 14, "pastilla": 999 },
+  "sombras": {
+    "ventana": "0 12 32 rgba(0,0,0,0.10)",
+    "menu": "0 10 28 rgba(0,0,0,0.14)"
+  },
+  "controles": { "alturaMinima": 44, "botonIcono": 30, "deshabilitadoOpacidad": 0.35 },
+  "ventanaPrincipal": { "ancho": 852, "alto": 712, "columnas": 2, "margen": 20 }
+}

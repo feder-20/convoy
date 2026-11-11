@@ -1,0 +1,5 @@
+"CFBundleDisplayName" = "Convoy";
+"NSHumanReadableCopyright" = "© 2026 ChocolitosSoft";
+"NSDesktopFolderUsageDescription" = "Convoy needs access to the Desktop to create project folders where you choose.";
+"NSDocumentsFolderUsageDescription" = "Convoy needs access to Documents to create project folders where you choose.";
+"NSDownloadsFolderUsageDescription" = "Convoy needs access to Downloads to create project folders where you choose.";

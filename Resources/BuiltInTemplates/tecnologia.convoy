@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "name": "Tecnología",
+  "folders": [
+    {
+      "name": "Acta de constitucion"
+    },
+    {
+      "name": "Stakeholders"
+    },
+    {
+      "name": "Requisitos"
+    },
+    {
+      "name": "Arquitectura"
+    },
+    {
+      "name": "Desarrollo"
+    },
+    {
+      "name": "Pruebas"
+    },
+    {
+      "name": "Seguimiento",
+      "children": [
+        {
+          "name": "Actas de reunion"
+        },
+        {
+          "name": "Informes de avance"
+        }
+      ]
+    },
+    {
+      "name": "Costos"
+    },
+    {
+      "name": "Despliegue"
+    },
+    {
+      "name": "Cierre"
+    }
+  ]
+}

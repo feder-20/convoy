@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "name": "Proyecto",
+  "folders": [
+    {
+      "name": "Acta de constitucion"
+    },
+    {
+      "name": "Stakeholders"
+    },
+    {
+      "name": "Planeacion"
+    },
+    {
+      "name": "Seguimiento",
+      "children": [
+        {
+          "name": "Actas de reunion"
+        },
+        {
+          "name": "Informes de avance"
+        }
+      ]
+    },
+    {
+      "name": "Costos",
+      "children": [
+        {
+          "name": "Cotizaciones"
+        },
+        {
+          "name": "Facturas"
+        }
+      ]
+    },
+    {
+      "name": "Contratos y proveedores"
+    },
+    {
+      "name": "Entregables"
+    },
+    {
+      "name": "Riesgos"
+    },
+    {
+      "name": "Cierre"
+    }
+  ]
+}

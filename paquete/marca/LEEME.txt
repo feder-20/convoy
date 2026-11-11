@@ -1,0 +1,31 @@
+CONVOY - Kit de marca v1 (11-nov-2026)
+
+Símbolo: una carpeta con tres líneas escalonadas, que muestran la estructura que la app crea dentro.
+Las líneas son recortes: en las versiones transparentes se ve el fondo a través de ellas.
+Nombre: Convoy (vehículos que avanzan juntos y en orden). Se escribe igual en español y en inglés.
+
+Colores
+  Negro Convoy   #111111   ícono, texto principal, botones primarios
+  Gris 600       #4A4A4A   texto secundario
+  Gris 500       #5C5C5C   etiquetas y metadatos
+  Gris 200       #E6E6E6   bordes
+  Gris 50        #FAFAFA   superficies
+  Blanco         #FFFFFF   fondo
+Tipografía: Inter Bold para el logo; en la app, la fuente del sistema (SF Pro).
+
+Archivos
+  convoy-icono-app-negro              Ícono de la app (retícula 1024 con área de 824). SVG + PNG 1024/512/256/128.
+  convoy-simbolo-negro-transparente   Símbolo negro sobre transparente. SVG + PNG 1024/512.
+  convoy-simbolo-blanco-transparente  Símbolo blanco sobre transparente, para fondos oscuros.
+  convoy-barra-menu-template          Ícono de barra de menú como Template Image (macOS lo tiñe). SVG + PNG 18 y 36 px.
+  convoy-logo-negro-transparente      Logo horizontal (símbolo + "convoy") negro sobre transparente.
+  convoy-logo-blanco-transparente     Logo horizontal blanco sobre transparente.
+  convoy-logo-sobre-negro             Logo horizontal blanco sobre fondo negro.
+
+Uso
+  - Solo negro o blanco. Sin degradados, sombras ni otros colores.
+  - Espacio libre mínimo alrededor del logo: la altura de la letra "c".
+  - No cambiar el número ni el orden de las líneas del símbolo.
+  - En Xcode: PNG de 1024 para AppIcon; el SVG de barra de menú como "Template Image".
+
+Pendiente: verificar la marca "Convoy" (SIC, USPTO, EUIPO), el dominio y el nombre en la App Store.

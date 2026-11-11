@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "Campaña",
+  "folders": [
+    {
+      "name": "Brief"
+    },
+    {
+      "name": "Stakeholders"
+    },
+    {
+      "name": "Creatividad"
+    },
+    {
+      "name": "Piezas",
+      "children": [
+        {
+          "name": "Aprobadas"
+        },
+        {
+          "name": "En revision"
+        }
+      ]
+    },
+    {
+      "name": "Pauta"
+    },
+    {
+      "name": "Seguimiento"
+    },
+    {
+      "name": "Costos"
+    },
+    {
+      "name": "Resultados"
+    }
+  ]
+}
