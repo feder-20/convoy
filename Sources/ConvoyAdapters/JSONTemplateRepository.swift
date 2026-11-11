@@ -26,13 +26,13 @@ public struct JSONTemplateRepository: TemplateRepository {
         if let dir = builtInDirectory {
             for (file, id) in Self.builtIns {
                 let url = dir.appendingPathComponent("\(file).convoy")
-                if let data = try? Data(contentsOf: url), let t = try? TemplateFile.decode(data) { result.append(t.template(id: id, builtIn: true)) }
+                if let data = try? TemplateFile.readData(at: url), let t = try? TemplateFile.decode(data) { result.append(t.template(id: id, builtIn: true)) }
             }
         }
         let files = (try? FileManager.default.contentsOfDirectory(at: userDirectory, includingPropertiesForKeys: nil)) ?? []
         let user: [Template] = files.filter { $0.pathExtension == "convoy" }.compactMap { url in
             guard let id = UUID(uuidString: url.deletingPathExtension().lastPathComponent),
-                  let data = try? Data(contentsOf: url), let t = try? TemplateFile.decode(data) else { return nil }
+                  let data = try? TemplateFile.readData(at: url), let t = try? TemplateFile.decode(data) else { return nil }
             return t.template(id: id)
         }
         return result + user.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
@@ -51,9 +51,7 @@ public struct JSONTemplateRepository: TemplateRepository {
     }
 
     public func importFile(at url: URL) throws -> Template {
-        let data: Data
-        do { data = try Data(contentsOf: url) } catch { throw ConvoyError.invalidTemplateFile(tr("No se pudo leer el archivo.")) }
-        return try TemplateFile.decode(data).template()
+        return try TemplateFile.decode(TemplateFile.readData(at: url)).template()
     }
 
     public func export(_ template: Template, to url: URL) throws {

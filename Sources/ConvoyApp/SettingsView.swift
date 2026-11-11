@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceManagement
+import ConvoyLicensing
 
 @MainActor
 enum LoginItem {
@@ -11,6 +12,10 @@ enum LoginItem {
 }
 
 struct SettingsView: View {
+    var trial: TrialController
+    @State private var showKeyField = false
+    @State private var key = ""
+    @State private var keyError: String?
     @AppStorage(Prefs.stripAccentsKey) private var stripAccents = false
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var loginError: String?
@@ -66,12 +71,35 @@ struct SettingsView: View {
                 }
                 if let actionMessage { Text(actionMessage).font(.caption).foregroundStyle(.red) }
             }
+            Section(L("Licencia")) {
+                if trial.isLicensed {
+                    Text(L("Premium activado · %@", trial.buyer ?? ""))
+                    Button(L("Quitar licencia")) { trial.removeLicense() }
+                } else {
+                    Text(trial.isExpired ? L("Periodo de prueba terminado") : (TrialTexts.banner(trial.state) ?? ""))
+                    Text(trial.trialEndText).font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Button(L("Obtener premium")) { trial.openPurchase() }
+                        Button(L("Introducir clave…")) { showKeyField.toggle() }
+                    }
+                    if showKeyField {
+                        TextField(L("Tengo una clave"), text: $key).font(.system(.body, design: .monospaced))
+                            .onSubmit(activate)
+                        Button(L("Activar"), action: activate).disabled(key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    if let keyError { Text(keyError).font(.caption).foregroundStyle(.red) }
+                }
+            }
             Section {
-                Text(L("Convoy no usa internet ni guarda datos de tus proyectos. Solo crea carpetas vacías.")).font(.caption).foregroundStyle(.secondary)
+                Text(L("Convoy no usa internet (solo abre la página de compra en tu navegador si lo pides) ni guarda datos de tus proyectos. Solo crea carpetas vacías.")).font(.caption).foregroundStyle(.secondary)
                 Text(L("Versión %@", Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")).font(.caption).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 500, height: 520)
+        .frame(width: 500, height: 660)
+    }
+
+    private func activate() {
+        if let e = trial.activate(key) { keyError = e } else { key = ""; keyError = nil; showKeyField = false }
     }
 }

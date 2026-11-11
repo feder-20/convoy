@@ -25,18 +25,15 @@ public struct PlanProject: Sendable {
             let type = try clean(node.name)
             let number = String(format: "%02d", index + 1)
             var segment = request.includeProjectNameInFolders ? "\(number)_\(root)_\(type)" : "\(number)_\(type)"
-            if segment.count > NameSanitizer.maxSegmentLength {
-                segment = String(segment.prefix(NameSanitizer.maxSegmentLength))
-                while let last = segment.last, last == "." || last == " " { segment.removeLast() }
-                truncated = true
-            }
-            guard firstLevel.insert(segment.lowercased()).inserted else { throw ConvoyError.duplicateFolder(node.name) }
+            let cut = NameSanitizer.truncate(segment)
+            if cut.truncated { segment = cut.value; truncated = true }
+            guard firstLevel.insert(segment.lowercased()).inserted else { throw ConvoyError.duplicateFolder(type) }
             planned.append(PlannedFolder(relativePath: [segment]))
 
             var children = Set<String>()
             for child in node.children {
                 let name = try clean(child.name)
-                guard children.insert(name.lowercased()).inserted else { throw ConvoyError.duplicateFolder(child.name) }
+                guard children.insert(name.lowercased()).inserted else { throw ConvoyError.duplicateFolder(name) }
                 planned.append(PlannedFolder(relativePath: [segment, name]))
             }
         }

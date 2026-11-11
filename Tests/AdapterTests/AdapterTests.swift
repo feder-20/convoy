@@ -50,7 +50,7 @@ final class AdapterTests: XCTestCase {
         try fm.createDirectory(at: existing, withIntermediateDirectories: true)
         try "no me toques".write(to: existing.appendingPathComponent("nota.txt"), atomically: true, encoding: .utf8)
         let before = listing(dest)
-        do { _ = try await CreateProject(writer: FileManagerFolderWriter(), access: BookmarkLocationAccess(defaults: UserDefaults(suiteName: "t-\(UUID())")!))(Fixtures.request("Expansión Perú", dest: dest)); XCTFail() }
+        do { _ = try await CreateProject(writer: FileManagerFolderWriter(), access: BookmarkLocationAccess(defaults: UserDefaults(suiteName: "t-\(UUID())")!), gate: OpenGate())(Fixtures.request("Expansión Perú", dest: dest)); XCTFail() }
         catch { XCTAssertEqual(error as? ConvoyError, .alreadyExists("Expansión Perú")) }
         XCTAssertEqual(listing(dest), before)
         XCTAssertEqual(try String(contentsOf: existing.appendingPathComponent("nota.txt")), "no me toques")
@@ -192,11 +192,109 @@ final class AdapterTests: XCTestCase {
         let defaults = UserDefaults(suiteName: "convoy-e2e-\(UUID())")!
         let access = BookmarkLocationAccess(defaults: defaults)
         let template = try repo().all()[1]                                   // Campaña
-        let result = try await CreateProject(writer: FileManagerFolderWriter(), access: access)(
+        let result = try await CreateProject(writer: FileManagerFolderWriter(), access: access, gate: OpenGate())(
             ProjectRequest(projectName: "Lanzamiento: Otoño", template: template, destination: dest, includeProjectNameInFolders: false))
         XCTAssertEqual(result.url.lastPathComponent, "Lanzamiento- Otoño")
         XCTAssertEqual(result.folderCount, 10)
         XCTAssertTrue(listing(result.url).contains("04_Piezas/En revision"))
         XCTAssertEqual(access.recent().map(\.lastPathComponent), ["Proyectos"])
+    }
+}
+
+/// Hallazgos H1 y H3 con el escritor y el repositorio reales.
+final class SecurityAdapterTests: XCTestCase {
+    var tmp: URL!, dest: URL!
+    let fm = FileManager.default
+
+    override func setUpWithError() throws {
+        tmp = fm.temporaryDirectory.appendingPathComponent("convoy-sec-\(UUID().uuidString)")
+        dest = tmp.appendingPathComponent("Destino")
+        try fm.createDirectory(at: dest, withIntermediateDirectories: true)
+    }
+    override func tearDownWithError() throws { try? fm.removeItem(at: tmp) }
+
+    func everything() -> [String] { ((try? fm.subpathsOfDirectory(atPath: tmp.path)) ?? []).sorted() }
+
+    func testHostileNamesNeverCreateAnythingOutsideTheDestination() async throws {
+        let access = BookmarkLocationAccess(defaults: UserDefaults(suiteName: "t-\(UUID())")!)
+        let run = CreateProject(writer: FileManagerFolderWriter(), access: access, gate: OpenGate())
+        let hostile = Template(name: "H", folders: [
+            FolderNode(name: "../\u{0338}ESC", children: [FolderNode(name: "..\\\u{0301}x"), FolderNode(name: "/\u{200D}/../..")]),
+            FolderNode(name: "../../fuera"),
+        ])
+        var n = 0
+        for name in ["../\u{0338}ESC", "/\u{0301}../x"] {
+            for include in [false, true] {
+                n += 1
+                let r = try await run(ProjectRequest(projectName: name + String(n), template: hostile, destination: dest, includeProjectNameInFolders: include))
+                XCTAssertEqual(r.url.standardizedFileURL.deletingLastPathComponent().path, dest.standardizedFileURL.path)
+            }
+        }
+        let outside = everything().filter { !$0.hasPrefix("Destino") }
+        XCTAssertEqual(outside, [], "nada fuera del destino: \(outside)")
+        XCTAssertEqual(try fm.contentsOfDirectory(atPath: dest.path).count, 4)
+    }
+
+    func testWriterRejectsForgedPlansThatEscape() async throws {
+        let writer = FileManagerFolderWriter()
+        let plans = [
+            CreationPlan(rootName: "../escape", folders: [], longestPathLength: 0, warnings: []),
+            CreationPlan(rootName: "a/b", folders: [], longestPathLength: 0, warnings: []),
+            CreationPlan(rootName: "..", folders: [], longestPathLength: 0, warnings: []),
+            CreationPlan(rootName: ".", folders: [], longestPathLength: 0, warnings: []),
+            CreationPlan(rootName: "", folders: [], longestPathLength: 0, warnings: []),
+            CreationPlan(rootName: "a\0b", folders: [], longestPathLength: 0, warnings: []),
+            CreationPlan(rootName: "Ok", folders: [PlannedFolder(relativePath: ["..", "x"])], longestPathLength: 0, warnings: []),
+            CreationPlan(rootName: "Ok", folders: [PlannedFolder(relativePath: ["../../zz"])], longestPathLength: 0, warnings: []),
+            CreationPlan(rootName: "Ok", folders: [PlannedFolder(relativePath: ["a", "."])], longestPathLength: 0, warnings: []),
+        ]
+        for p in plans {
+            do { _ = try await writer.create(p, in: dest); XCTFail("debía rechazar \(p.rootName) \(p.folders.map(\.relativePath))") }
+            catch { XCTAssertEqual(error as? ConvoyError, .creationFailed("Destino")) }
+        }
+        XCTAssertThrowsError(try writer.exists("../x", in: dest))
+        XCTAssertEqual(everything(), ["Destino"], "no se creó nada")
+    }
+
+    func testTemporaryRootIsRemovedAfterSuccessAndFailure() async throws {
+        let before = Set((try? fm.contentsOfDirectory(atPath: fm.temporaryDirectory.path)) ?? [])
+        let w = FileManagerFolderWriter(afterEachFolder: { if $0 == 1 { throw ConvoyError.creationFailed("x") } })
+        _ = try? await w.create(CreationPlan(rootName: "R", folders: [PlannedFolder(relativePath: ["a"]), PlannedFolder(relativePath: ["b"])], longestPathLength: 0, warnings: []), in: dest)
+        XCTAssertEqual(try fm.contentsOfDirectory(atPath: dest.path), [])
+        _ = before
+    }
+
+    // MARK: H3
+
+    func repo() -> JSONTemplateRepository { JSONTemplateRepository(userDirectory: tmp.appendingPathComponent("t"), builtInDirectory: nil) }
+    func write(_ s: String) throws -> URL { let u = tmp.appendingPathComponent("x-\(UUID()).convoy"); try s.write(to: u, atomically: true, encoding: .utf8); return u }
+    func template(top: Int = 1, children: Int = 0, folderName: String = "A", name: String = "T") -> String {
+        let kids = (0..<children).map { #"{"name":"c\#($0)"}"# }.joined(separator: ",")
+        let tops = (0..<top).map { #"{"name":"\#(folderName)\#($0)","children":[\#(kids)]}"# }.joined(separator: ",")
+        return #"{"schemaVersion":1,"name":"\#(name)","folders":[\#(tops)]}"#
+    }
+
+    func testImportLimits() throws {
+        XCTAssertNoThrow(try repo().importFile(at: write(template(top: 99, children: 99))))
+        let bad = [template(top: 100), template(top: 1, children: 100), template(folderName: String(repeating: "x", count: 256)),
+                   template(name: String(repeating: "n", count: 81))]
+        for c in bad {
+            XCTAssertThrowsError(try repo().importFile(at: write(c))) { guard case ConvoyError.invalidTemplateFile = $0 else { return XCTFail("\($0)") } }
+        }
+        XCTAssertNoThrow(try repo().importFile(at: write(template(name: String(repeating: "n", count: 80)))))
+    }
+
+    func testImportRejectsBigAndNonRegularFilesBeforeReading() throws {
+        let big = tmp.appendingPathComponent("big.convoy")
+        try Data(count: 1_048_577).write(to: big)
+        XCTAssertThrowsError(try repo().importFile(at: big)) { XCTAssertTrue($0.localizedDescription.contains("1 MB")) }
+        // Un archivo de relleno con JSON válido pero enorme también se rechaza por tamaño.
+        let padded = tmp.appendingPathComponent("padded.convoy")
+        try (template() + String(repeating: " ", count: 1_100_000)).write(to: padded, atomically: true, encoding: .utf8)
+        XCTAssertThrowsError(try repo().importFile(at: padded))
+        XCTAssertThrowsError(try repo().importFile(at: dest)) { XCTAssertTrue($0.localizedDescription.contains("normal")) }
+        let fifo = tmp.appendingPathComponent("fifo.convoy")
+        XCTAssertEqual(mkfifo(fifo.path, 0o600), 0)
+        XCTAssertThrowsError(try repo().importFile(at: fifo))   // no se queda bloqueado leyendo
     }
 }

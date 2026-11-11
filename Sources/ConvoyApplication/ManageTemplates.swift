@@ -33,6 +33,9 @@ public struct ManageTemplates: Sendable {
         try repository.delete(id: template.id)
     }
 
+    /// Lee y valida un `.convoy` sin guardarlo (para pedir confirmación antes de importar).
+    public func preview(fileAt url: URL) throws -> Template { try repository.importFile(at: url) }
+
     @discardableResult
     public func importFile(at url: URL) throws -> Template {
         var t = try repository.importFile(at: url)

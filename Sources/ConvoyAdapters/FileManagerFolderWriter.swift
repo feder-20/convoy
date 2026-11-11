@@ -12,13 +12,25 @@ public struct FileManagerFolderWriter: FolderWriter {
         self.afterEachFolder = afterEachFolder
     }
 
+    /// Un segmento válido es un solo nombre: sin «/», sin NUL, ni «.» ni «..», ni vacío.
+    static func isSafeSegment(_ name: String) -> Bool {
+        !name.isEmpty && name != "." && name != ".." && !name.unicodeScalars.contains { $0 == "/" || $0 == "\0" }
+    }
+
     public func exists(_ name: String, in parent: URL) throws -> Bool {
-        FileManager.default.fileExists(atPath: parent.appendingPathComponent(name).path)
+        guard Self.isSafeSegment(name) else { throw ConvoyError.creationFailed(parent.lastPathComponent) }
+        return FileManager.default.fileExists(atPath: parent.appendingPathComponent(name).path)
     }
 
     public func create(_ plan: CreationPlan, in parent: URL) async throws -> URL {
         let fm = FileManager.default
+        let failure = ConvoyError.creationFailed(parent.lastPathComponent)
+        // El plan puede venir de cualquier parte: se comprueba antes de tocar el disco.
+        guard Self.isSafeSegment(plan.rootName), plan.folders.allSatisfy({ $0.relativePath.allSatisfy(Self.isSafeSegment) }) else { throw failure }
         let final = parent.appendingPathComponent(plan.rootName, isDirectory: true)
+        let parentPath = parent.standardizedFileURL.path
+        guard final.standardizedFileURL.deletingLastPathComponent().path == parentPath,
+              final.standardizedFileURL.lastPathComponent == plan.rootName else { throw failure }
         if fm.fileExists(atPath: final.path) { throw ConvoyError.alreadyExists(plan.rootName) }
 
         let temp: URL
@@ -29,9 +41,12 @@ public struct FileManagerFolderWriter: FolderWriter {
 
         do {
             let root = temp.appendingPathComponent(plan.rootName, isDirectory: true)
+            let rootPrefix = root.standardizedFileURL.path + "/"
+            guard root.standardizedFileURL.deletingLastPathComponent().path == temp.standardizedFileURL.path else { throw failure }
             try fm.createDirectory(at: root, withIntermediateDirectories: false)
             for (index, folder) in plan.folders.enumerated() {
                 let url = folder.relativePath.reduce(root) { $0.appendingPathComponent($1, isDirectory: true) }
+                guard url.standardizedFileURL.path.hasPrefix(rootPrefix) else { throw failure }
                 try fm.createDirectory(at: url, withIntermediateDirectories: false)
                 try afterEachFolder(index)
             }

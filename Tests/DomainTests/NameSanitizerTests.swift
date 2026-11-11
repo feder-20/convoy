@@ -99,3 +99,50 @@ final class TemplateEditingTests: XCTestCase {
         XCTAssertTrue(Set(copy.folders[0].children.map(\.id)).isDisjoint(with: Set(original.folders[0].children.map(\.id))))
     }
 }
+
+/// Hallazgo H1: el saneado va por escalares Unicode, no por `Character`.
+final class NameSanitizerSecurityTests: XCTestCase {
+    func s(_ raw: String) throws -> String { try NameSanitizer.sanitize(raw).value }
+
+    func testSeparatorFollowedByCombiningMarkIsStillReplaced() throws {
+        for mark in ["\u{0338}", "\u{0301}", "\u{200D}", "\u{FE0F}", "\u{0308}\u{0323}"] {
+            for bad in ["/", "\\", ":", "*", "?", "\"", "<", ">", "|"] {
+                let v = try s("a\(bad)\(mark)b")
+                XCTAssertFalse(v.unicodeScalars.contains { "/\\:*?\"<>|".unicodeScalars.contains($0) }, "\(bad) + \(mark.unicodeScalars.map(\.value)) → \(v)")
+            }
+        }
+        let v = try s("../\u{0338}x")
+        XCTAssertFalse(v.contains("/")); XCTAssertEqual(v.unicodeScalars.first, ".")
+        XCTAssertTrue(try NameSanitizer.sanitize("a/\u{0338}b").replacedCharacters)
+    }
+
+    func testControlFormatBidiAndTagScalarsBecomeDashes() throws {
+        for scalar in [0x0, 0x1F, 0x7F, 0x80, 0x9F, 0x2028, 0x2029, 0x200B, 0x200E, 0x200F, 0x202A, 0x202E, 0x2066, 0x2069, 0xFEFF, 0x00AD, 0xE0000, 0xE0041, 0xE007F] {
+            let ch = String(Unicode.Scalar(scalar)!)
+            let r = try NameSanitizer.sanitize("a\(ch)b")
+            XCTAssertEqual(r.value, "a-b", "U+\(String(scalar, radix: 16))")
+            XCTAssertTrue(r.replacedCharacters)
+        }
+        XCTAssertEqual(try s("fi\u{202E}gnp.exe"), "fi-gnp.exe")
+        XCTAssertEqual(try s("a\0b"), "a-b")
+    }
+
+    func testUnicodeSpacesAreTrimmed() throws {
+        XCTAssertEqual(try s("\u{2003}\u{3000}Plan\u{2009}\u{2009}x\u{00A0}"), "Plan x")
+    }
+
+    func testLimitsByCharactersAndByUTF8Bytes() throws {
+        XCTAssertEqual(try s(String(repeating: "a", count: 300)).count, 80)
+        let emoji = try NameSanitizer.sanitize(String(repeating: "😀", count: 80))   // 80 caracteres = 320 bytes
+        XCTAssertLessThanOrEqual(emoji.value.utf8.count, 255)
+        XCTAssertTrue(emoji.truncated)
+        let zalgo = try NameSanitizer.sanitize("a" + String(repeating: "\u{0301}", count: 400))
+        XCTAssertLessThanOrEqual(zalgo.value.utf8.count, 255)
+        XCTAssertLessThanOrEqual(try s(String(repeating: "ñ", count: 200)).utf8.count, 255)
+    }
+
+    func testDotNamesAndStripAccentsNeverSurviveAsPathComponents() {
+        for n in [".", "..", "...", " . "] { XCTAssertThrowsError(try s(n), n) }
+        XCTAssertFalse((try? NameSanitizer.sanitize("/\u{0338}", stripAccents: true).value.contains("/")) ?? false)
+    }
+}

@@ -172,6 +172,14 @@ struct Messages: View {
     var body: some View {
         let lines = [model.message].compactMap { $0 } + (model.message == nil ? model.warnings : [])
         VStack(alignment: .leading, spacing: 6) {
+            if let linked = model.linkedDestination {
+                Text(L("Destino fijado por un enlace: %@", linked.path)).font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Tokens.warning).fixedSize(horizontal: false, vertical: true)
+                Button(L("Usar esta carpeta")) { model.confirmLinkedDestination() }.buttonStyle(.secondary).frame(maxWidth: 220)
+            }
+            if let linkError = model.linkError {
+                Text(linkError).font(.system(size: 12)).foregroundStyle(Tokens.warning).fixedSize(horizontal: false, vertical: true)
+            }
             ForEach(lines, id: \.self) { Text($0).font(.system(size: 12)).foregroundStyle(Tokens.warning).fixedSize(horizontal: false, vertical: true) }
             if model.existingURL != nil {
                 Button(L("Mostrar en Finder")) { model.revealExisting() }.buttonStyle(.secondary).frame(maxWidth: 220)
@@ -228,6 +236,7 @@ struct PreviewTreeView: View {
                 Text(error.localizedDescription).font(.system(size: 13)).foregroundStyle(Tokens.warning)
                 Spacer()
             }
+            TrialBanner(trial: model.trial)
         }
         .padding(20)
         .accessibilityElement(children: .contain)

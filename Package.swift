@@ -11,12 +11,15 @@ let package = Package(
     targets: [
         .target(name: "ConvoyDomain"),
         .target(name: "ConvoyPorts", dependencies: ["ConvoyDomain"]),
+        // Prueba y licencia: lógica pura (CryptoKit, sin AppKit).
+        .target(name: "ConvoyLicensing", dependencies: ["ConvoyDomain", "ConvoyPorts"]),
         .target(name: "ConvoyApplication", dependencies: ["ConvoyDomain", "ConvoyPorts"]),
         .target(name: "ConvoyAdapters", dependencies: ["ConvoyDomain", "ConvoyPorts"]),
-        .executableTarget(name: "ConvoyApp", dependencies: ["ConvoyDomain", "ConvoyPorts", "ConvoyApplication", "ConvoyAdapters"]),
+        .executableTarget(name: "ConvoyApp", dependencies: ["ConvoyDomain", "ConvoyPorts", "ConvoyApplication", "ConvoyAdapters", "ConvoyLicensing"]),
         .testTarget(name: "DomainTests", dependencies: ["ConvoyDomain"]),
         .testTarget(name: "ApplicationTests", dependencies: ["ConvoyDomain", "ConvoyPorts", "ConvoyApplication"]),
+        .testTarget(name: "LicensingTests", dependencies: ["ConvoyDomain", "ConvoyPorts", "ConvoyLicensing"]),
         .testTarget(name: "AdapterTests", dependencies: ["ConvoyDomain", "ConvoyPorts", "ConvoyApplication", "ConvoyAdapters"]),
-        .testTarget(name: "AppTests", dependencies: ["ConvoyApp", "ConvoyDomain", "ConvoyApplication"]),
+        .testTarget(name: "AppTests", dependencies: ["ConvoyApp", "ConvoyDomain", "ConvoyApplication", "ConvoyLicensing"]),
     ]
 )

@@ -1,5 +1,8 @@
 import Foundation
 import ConvoyDomain
+import ConvoyPorts
+
+struct OpenGate: ExecutionGate { func check() throws {} }
 
 enum Fixtures {
     static func f(_ n: String, _ c: [String] = []) -> FolderNode { FolderNode(name: n, children: c.map { FolderNode(name: $0) }) }

@@ -2,6 +2,8 @@ import XCTest
 import ConvoyDomain
 import ConvoyPorts
 import ConvoyAdapters
+import ConvoyApplication
+import ConvoyLicensing
 @testable import ConvoyApp
 
 final class FakeRevealer: FinderRevealer, @unchecked Sendable {
@@ -26,10 +28,18 @@ final class ModelTests: XCTestCase {
     }
     override func tearDown() async throws { try? fm.removeItem(at: tmp); UserDefaults.standard.removeObject(forKey: Prefs.stripAccentsKey) }
 
-    func makeModel() -> AppModel {
+    static func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 12) -> Date {
+        Calendar.current.date(from: DateComponents(year: y, month: m, day: d, hour: h))!
+    }
+    var opened: [URL] = []
+    func makeTrial(now: Date = ModelTests.date(2026, 12, 1), store: KeyValueStore = MemoryStore()) -> TrialController {
+        TrialController(manager: TrialManager(store: store, now: { now }), opener: { _ in })
+    }
+
+    func makeModel(trial: TrialController? = nil, validator: DestinationValidator = DestinationValidator()) -> AppModel {
         let m = AppModel(repository: JSONTemplateRepository(userDirectory: tmp.appendingPathComponent("templates"), builtInDirectory: builtIns),
                          access: BookmarkLocationAccess(defaults: UserDefaults(suiteName: "convoy-m-\(UUID())")!),
-                         revealer: revealer)
+                         revealer: revealer, trial: trial ?? makeTrial(), destinationValidator: validator)
         m.setDestination(dest)
         return m
     }
@@ -174,12 +184,70 @@ final class ModelTests: XCTestCase {
     }
 
     func testFinderRequestSetsFolderAndFocus() {
-        let m = makeModel()
+        let m = makeModel(validator: Self.okValidator)
         m.tab = .templates
         let before = m.focusTick
-        m.prepare(destination: tmp)
-        XCTAssertEqual(m.tab, .newProject); XCTAssertEqual(m.destination.standardizedFileURL, tmp.standardizedFileURL)
+        m.prepare(requestedPath: "/Users/x/Proyectos")
+        XCTAssertEqual(m.tab, .newProject); XCTAssertEqual(m.destination.path, "/Users/x/Proyectos")
         XCTAssertEqual(m.focusTick, before + 1)
+    }
+
+    static let okValidator = DestinationValidator(home: "/Users/x", probe: .init(isDirectory: { _ in true }, isWritable: { _ in true }, resolve: { $0 }))
+
+    func testLinkedDestinationShowsPersistentNoticeAndBlocksCreationUntilConfirmed() {
+        let m = makeModel(validator: Self.okValidator)
+        m.projectName = ""
+        m.prepare(requestedPath: "/Users/x/Proyectos")
+        XCTAssertEqual(m.linkedDestination?.path, "/Users/x/Proyectos")
+        m.projectName = "Algo"
+        XCTAssertNotNil(m.linkedDestination, "escribir un nombre no confirma el destino")
+        XCTAssertFalse(m.canCreate)
+        m.confirmLinkedDestination()
+        XCTAssertNil(m.linkedDestination); XCTAssertTrue(m.canCreate)
+        m.prepare(requestedPath: "/Users/x/Otra")
+        XCTAssertEqual(m.destination.path, "/Users/x/Proyectos", "no se cambia el destino mientras se escribe un nombre")
+        XCTAssertNil(m.linkedDestination); XCTAssertNotNil(m.linkError)
+        m.startAnother()
+        m.prepare(requestedPath: "/Users/x/Otra")
+        XCTAssertNotNil(m.linkedDestination)
+        m.setDestination(dest)
+        XCTAssertNil(m.linkedDestination, "elegir otra carpeta retira el aviso")
+    }
+
+    func testHostileLinkDestinationsAreRejectedAndDestinationIsKept() {
+        let m = makeModel(validator: Self.okValidator)
+        for bad in ["/", "/etc", "/System/Library", "/Users/x/Library/Preferences", "/Users/x/.ssh", "relativa", "/Users/x/../../etc", "/Users/x/.oculta"] {
+            m.prepare(requestedPath: bad)
+            XCTAssertEqual(m.destination, dest, bad)
+            XCTAssertNil(m.linkedDestination, bad)
+            XCTAssertNotNil(m.linkError, bad)
+        }
+    }
+
+    func testExpiredTrialBlocksCreationWithoutTouchingDiskAndNotifies() async throws {
+        let m = makeModel(trial: makeTrial(now: Self.date(2027, 2, 10)))
+        var notified = false
+        m.onTrialExpired = { notified = true }
+        m.projectName = "No debe crearse"
+        await m.create()
+        XCTAssertTrue(notified)
+        XCTAssertEqual(try fm.contentsOfDirectory(atPath: dest.path), [])
+        XCTAssertEqual(m.message, ConvoyError.trialExpired.localizedDescription)
+        let t = makeTrial(now: Self.date(2027, 2, 9))
+        let ok = makeModel(trial: t); ok.projectName = "Sí se crea"
+        await ok.create()
+        XCTAssertTrue(fm.fileExists(atPath: dest.appendingPathComponent("Sí se crea").path))
+    }
+
+    func testPreviewImportDoesNotSaveAnything() throws {
+        let m = makeModel()
+        let file = tmp.appendingPathComponent("x.convoy")
+        m.selectedTemplateID = m.templates.first?.id
+        m.exportSelected(to: file)
+        let before = m.templates.count
+        guard case .success(let t) = m.previewImport(from: file) else { return XCTFail() }
+        XCTAssertEqual(t.name, "Proyecto"); XCTAssertEqual(m.templates.count, before)
+        guard case .failure = m.previewImport(from: tmp.appendingPathComponent("no.convoy")) else { return XCTFail() }
     }
 
     func testHotKeyDefaultsToOptionCommandN() {

@@ -105,3 +105,84 @@ final class PlanProjectTests: XCTestCase {
         XCTAssertEqual(p.longestPathLength, expected)
     }
 }
+
+final class PlanProjectSecurityTests: XCTestCase {
+    let plan = PlanProject()
+
+    func testHostileProjectNameCannotProduceAnEscapingSegment() throws {
+        for name in ["../\u{0338}ESC", "..\\\u{0301}x", "/\u{200D}etc", "a\u{202E}/b\u{0}c"] {
+            let p = try plan(Fixtures.request(name, include: false))
+            for f in p.folders { for seg in f.relativePath { XCTAssertFalse(seg.contains("/") || seg.contains("\0"), "\(name) → \(seg)") } }
+            XCTAssertFalse(p.rootName.contains("/"))
+        }
+    }
+
+    func testHostileTemplateFolderNamesAreSanitized() throws {
+        let t = Template(name: "X", folders: [FolderNode(name: "../\u{0338}etc", children: [FolderNode(name: "a/\u{0301}b")])])
+        let p = try plan(Fixtures.request("Proyecto", template: t))
+        for f in p.folders { for seg in f.relativePath { XCTAssertFalse(seg.contains("/"), seg) } }
+    }
+
+    func testDuplicateErrorShowsTheSanitizedName() {
+        let t = Template(name: "X", folders: [FolderNode(name: "A", children: [FolderNode(name: "b\u{202E}"), FolderNode(name: "b-")])])
+        XCTAssertThrowsError(try plan(Fixtures.request("P", template: t))) {
+            guard case ConvoyError.duplicateFolder(let n) = $0 else { return XCTFail() }
+            XCTAssertFalse(n.unicodeScalars.contains { $0.value == 0x202E })
+        }
+    }
+
+    func testSegmentsRespectTheByteLimit() throws {
+        let t = Template(name: "X", folders: [FolderNode(name: String(repeating: "😀", count: 40))])
+        let p = try plan(Fixtures.request(String(repeating: "😀", count: 30), template: t))
+        for f in p.folders { for seg in f.relativePath { XCTAssertLessThanOrEqual(seg.utf8.count, 255) } }
+    }
+}
+
+final class DestinationValidatorTests: XCTestCase {
+    func v(dir: Bool? = true, writable: Bool = true, resolve: @escaping @Sendable (String) -> String = { $0 }) -> DestinationValidator {
+        DestinationValidator(home: "/Users/ana", probe: .init(isDirectory: { _ in dir }, isWritable: { _ in writable }, resolve: resolve))
+    }
+
+    func testAcceptsNormalFoldersAndTrailingSlash() throws {
+        XCTAssertEqual(try v().validate("/Users/ana/Documents/Proyectos").get().path, "/Users/ana/Documents/Proyectos")
+        XCTAssertEqual(try v().validate("/Users/ana/Documents/Proyectos/").get().path, "/Users/ana/Documents/Proyectos")
+        XCTAssertEqual(try v().validate("/Volumes/Disco/Trabajo").get().path, "/Volumes/Disco/Trabajo")
+    }
+
+    func testRejectsForbiddenAndHiddenAndNonStandard() {
+        let cases: [(String, DestinationValidator.Rejection)] = [
+            ("/", .forbidden), ("/Library", .forbidden), ("/Library/Foo", .forbidden), ("/System/Library", .forbidden),
+            ("/Applications", .forbidden), ("/Applications/X.app", .forbidden), ("/usr/local", .forbidden), ("/bin", .forbidden),
+            ("/etc", .forbidden), ("/private/tmp", .forbidden), ("/private", .forbidden),
+            ("/Users/ana/Library", .forbidden), ("/Users/ana/Library/LaunchAgents", .forbidden), ("/Users/ana/.ssh", .forbidden),
+            ("/Users/ana/.ssh/keys", .forbidden), ("/Users/ana/.config", .hidden), ("/Users/ana/Docs/.oculta/x", .hidden),
+            ("relativa/ruta", .notAbsolute), ("", .notAbsolute), ("~/Documents", .notAbsolute),
+            ("/Users/ana/../../etc", .notStandardized), ("/Users/ana/./x", .notStandardized), ("/Users//ana", .notStandardized),
+        ]
+        for (path, reason) in cases { XCTAssertEqual(v().validate(path), .failure(reason), path) }
+        XCTAssertNotEqual(v().validate("/LibraryX/y"), .failure(.forbidden), "el prefijo exige límite de carpeta")
+    }
+
+    func testSymlinkToProtectedZoneIsRejected() {
+        let linked = v(resolve: { $0 == "/Users/ana/enlace" ? "/etc" : $0 })
+        XCTAssertEqual(linked.validate("/Users/ana/enlace"), .failure(.forbidden))
+    }
+
+    func testMustExistBeDirectoryAndWritable() {
+        XCTAssertEqual(v(dir: nil).validate("/Users/ana/x"), .failure(.missing))
+        XCTAssertEqual(v(dir: false).validate("/Users/ana/x"), .failure(.notDirectory))
+        XCTAssertEqual(v(writable: false).validate("/Users/ana/x"), .failure(.notWritable))
+    }
+
+    func testLiveProbeAgainstRealDirectories() throws {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("conv-\(UUID())")
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        let validator = DestinationValidator(home: "/Users/nadie")
+        XCTAssertEqual(validator.validate(tmp.path + "/no-existe"), .failure(.forbidden), "el temporal vive bajo /var → /private")
+        XCTAssertEqual(DestinationValidator(home: "/Users/nadie", probe: .live).validate("/etc/hosts"), .failure(.forbidden))
+        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
+        XCTAssertEqual(DestinationValidator().validate(home + "/Library"), .failure(.forbidden))
+        XCTAssertEqual(DestinationValidator().validate(home + "/Desarrollos-que-no-existe-xyz"), .failure(.missing))
+    }
+}

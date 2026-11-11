@@ -5,6 +5,7 @@ import ConvoyDomain
 import ConvoyPorts
 import ConvoyApplication
 import ConvoyAdapters
+import ConvoyLicensing
 
 enum MainTab: Hashable { case newProject, templates }
 
@@ -29,18 +30,33 @@ final class AppModel {
     private(set) var existingURL: URL?
     private(set) var isCreating = false
     var focusTick = 0
+    /// Carpeta fijada por un enlace `convoy://`: se muestra completa hasta que el usuario la confirme o elija otra.
+    private(set) var linkedDestination: URL?
+    private(set) var linkError: String?
+    let trial: TrialController
+    /// La interfaz lo usa para mostrar la ventana de activación cuando la prueba termina.
+    @ObservationIgnored var onTrialExpired: () -> Void = {}
 
     private let access: LocationAccess
     private let manage: ManageTemplates
     private let createProject: CreateProject
     private let revealer: FinderRevealer
     private let plan = PlanProject()
+    private let validator: DestinationValidator
+    @ObservationIgnored private var planCache: (key: PlanKey, result: Result<CreationPlan, ConvoyError>)?
+
+    private struct PlanKey: Equatable {
+        var name: String, template: Template?, destination: URL, include: Bool, strip: Bool
+    }
 
     init(repository: TemplateRepository = JSONTemplateRepository(), access: LocationAccess = BookmarkLocationAccess(),
-         writer: FolderWriter = FileManagerFolderWriter(), revealer: FinderRevealer = NSWorkspaceRevealer()) {
+         writer: FolderWriter = FileManagerFolderWriter(), revealer: FinderRevealer = NSWorkspaceRevealer(),
+         trial: TrialController, destinationValidator: DestinationValidator = DestinationValidator()) {
+        self.trial = trial
+        self.validator = destinationValidator
         self.access = access
         self.manage = ManageTemplates(repository: repository)
-        self.createProject = CreateProject(writer: writer, access: access)
+        self.createProject = CreateProject(writer: writer, access: access, gate: trial.gate)
         self.revealer = revealer
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let start = access.defaultLocation() ?? documents
@@ -58,7 +74,16 @@ final class AppModel {
     var stripAccents: Bool { Prefs.stripAccents }
 
     /// Lo que se crearía ahora; con el nombre vacío se usa el marcador «Nombre del proyecto» (convoy.md §4.3).
+    /// Se calcula una vez por combinación de entradas (no en cada render).
     var planResult: Result<CreationPlan, ConvoyError> {
+        let key = PlanKey(name: projectName, template: selectedTemplate, destination: destination, include: includeName, strip: stripAccents)
+        if let c = planCache, c.key == key { return c.result }
+        let result = computePlan()
+        planCache = (key, result)
+        return result
+    }
+
+    private func computePlan() -> Result<CreationPlan, ConvoyError> {
         guard let template = selectedTemplate else { return .failure(.emptyTemplate) }
         let name = isPlaceholder ? L("Nombre del proyecto") : projectName
         do {
@@ -68,7 +93,7 @@ final class AppModel {
     }
 
     var canCreate: Bool {
-        if isPlaceholder || isCreating { return false }
+        if isPlaceholder || isCreating || linkedDestination != nil { return false }
         if case .success = planResult { return true } else { return false }
     }
 
@@ -140,7 +165,12 @@ final class AppModel {
 
     // MARK: Destino
 
-    func setDestination(_ url: URL) { destination = url; phase = .editing; message = nil; existingURL = nil }
+    func setDestination(_ url: URL) {
+        destination = url; phase = .editing; message = nil; existingURL = nil
+        linkedDestination = nil; linkError = nil
+    }
+
+    func confirmLinkedDestination() { linkedDestination = nil; linkError = nil }
 
     func chooseOtherFolder() {
         let panel = NSOpenPanel()
@@ -173,6 +203,10 @@ final class AppModel {
             phase = .created(url: r.url, folderCount: r.folderCount, where_: breadcrumb(destination))
             message = nil
             recents = access.recent()
+        } catch ConvoyError.trialExpired {
+            trial.refresh()
+            message = ConvoyError.trialExpired.localizedDescription
+            onTrialExpired()
         } catch let e as ConvoyError {
             handle(e)
         } catch {
@@ -204,11 +238,32 @@ final class AppModel {
         phase = .editing; projectName = ""; message = nil; existingURL = nil; focusTick += 1
     }
 
-    /// Lo que pide el clic derecho del Finder: carpeta y foco en el nombre.
-    func prepare(destination url: URL?) {
+    /// Lo que pide el clic derecho del Finder (`convoy://new?path=`): la ruta se valida; si el usuario ya está
+    /// escribiendo un nombre no se cambia el destino; y si se aplica, queda un aviso hasta que lo confirme.
+    func prepare(requestedPath path: String?) {
         tab = .newProject
-        if let url { setDestination(url) }
+        linkError = nil
+        if let path {
+            switch validator.validate(path) {
+            case .failure(let reason):
+                linkError = L("Un enlace pidió usar una carpeta, pero no se aplicó. %@", reason.message)
+            case .success(let url):
+                if !isPlaceholder, case .editing = phase {
+                    linkError = L("Un enlace pidió usar «%@», pero no se aplicó porque estabas escribiendo un nombre.", url.path)
+                } else {
+                    destination = url; phase = .editing; message = nil; existingURL = nil
+                    linkedDestination = url
+                }
+            }
+        }
         if case .created = phase { phase = .editing; projectName = "" }
         focusTick += 1
+    }
+
+    /// Lee una plantilla `.convoy` sin guardarla, para pedir confirmación antes de importarla.
+    func previewImport(from url: URL) -> Result<Template, ConvoyError> {
+        do { return .success(try manage.preview(fileAt: url)) }
+        catch let e as ConvoyError { return .failure(e) }
+        catch { return .failure(.invalidTemplateFile(tr("No se pudo leer el archivo."))) }
     }
 }

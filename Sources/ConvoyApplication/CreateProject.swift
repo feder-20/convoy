@@ -7,13 +7,16 @@ public struct CreateProject: Sendable {
     private let plan = PlanProject()
     private let writer: FolderWriter
     private let access: LocationAccess
+    private let gate: ExecutionGate
 
-    public init(writer: FolderWriter, access: LocationAccess) {
+    public init(writer: FolderWriter, access: LocationAccess, gate: ExecutionGate) {
         self.writer = writer
         self.access = access
+        self.gate = gate
     }
 
     public func callAsFunction(_ request: ProjectRequest, stripAccents: Bool = false) async throws -> CreationResult {
+        try gate.check()   // periodo de prueba vencido: no se planifica ni se toca el disco
         let creation = try plan(request, stripAccents: stripAccents)
         let url = try await access.withAccess(to: request.destination) {
             if try writer.exists(creation.rootName, in: request.destination) {

@@ -28,3 +28,8 @@ public protocol LocationAccess: Sendable {
 public protocol FinderRevealer: Sendable {
     func reveal(_ url: URL)
 }
+
+/// Puerta de ejecución (periodo de prueba/licencia): lanza un error localizado si la función principal no puede ejecutarse.
+public protocol ExecutionGate: Sendable {
+    func check() throws
+}

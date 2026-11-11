@@ -39,10 +39,24 @@ final class FakeRepo: TemplateRepository, @unchecked Sendable {
     func export(_ t: Template, to url: URL) throws {}
 }
 
+struct FakeGate: ExecutionGate {
+    var blocked = false
+    func check() throws { if blocked { throw ConvoyError.trialExpired } }
+}
+
 final class CreateProjectTests: XCTestCase {
-    func make() -> (CreateProject, FakeWriter, FakeAccess) {
+    func make(blocked: Bool = false) -> (CreateProject, FakeWriter, FakeAccess) {
         let w = FakeWriter(), a = FakeAccess()
-        return (CreateProject(writer: w, access: a), w, a)
+        return (CreateProject(writer: w, access: a, gate: FakeGate(blocked: blocked)), w, a)
+    }
+
+    func testExpiredGateRejectsBeforeTouchingDiskOrAskingAccess() async {
+        let (run, w, a) = make(blocked: true)
+        do { _ = try await run(Fixtures.request()); XCTFail() } catch { XCTAssertEqual(error as? ConvoyError, .trialExpired) }
+        XCTAssertTrue(w.created.isEmpty); XCTAssertTrue(a.accessed.isEmpty); XCTAssertTrue(a.remembered.isEmpty)
+        let (ok, w2, _) = make(blocked: false)
+        _ = try? await ok(Fixtures.request())
+        XCTAssertEqual(w2.created.count, 1)
     }
 
     func testCreatesWithAccessAndRemembersDestination() async throws {

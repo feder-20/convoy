@@ -106,6 +106,7 @@ public enum ConvoyError: Error, Equatable, LocalizedError {
     case noPermission(URL), creationFailed(String)
     case tooManyFolders, duplicateFolder(String)
     case invalidTemplateFile(String), builtInTemplate
+    case trialExpired
 
     public var errorDescription: String? {
         switch self {
@@ -119,6 +120,7 @@ public enum ConvoyError: Error, Equatable, LocalizedError {
         case .tooManyFolders: return tr("Una plantilla admite hasta 99 carpetas de primer nivel.")
         case .duplicateFolder(let n): return tr("La plantilla tiene dos carpetas con el nombre «%@».", n)
         case .invalidTemplateFile(let why): return tr("El archivo de plantilla no es válido. %@", why)
+        case .trialExpired: return tr("El periodo de prueba terminó. Activa Convoy premium para crear proyectos.")
         case .builtInTemplate: return tr("Las plantillas de fábrica no se pueden cambiar. Duplícala para editarla.")
         }
     }
