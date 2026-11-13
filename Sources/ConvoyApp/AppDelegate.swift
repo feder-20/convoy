@@ -66,11 +66,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Primer arranque: se muestra una sola vez.
-    private func showWelcome() { runNotice(title: TrialTexts.welcomeTitle, body: TrialTexts.welcomeBody) }
+    private func showWelcome() { runNotice(title: TrialTexts.welcomeTitle, body: TrialTexts.welcomeBody(endDate: trial.endDateText)) }
 
     /// Últimos 14 días: como máximo una vez por día.
     private func showReminder(daysLeft: Int) {
-        runNotice(title: daysLeft == 1 ? L("Último día de prueba") : L("Quedan %d días de prueba", daysLeft), body: TrialTexts.reminderBody(daysLeft: daysLeft))
+        runNotice(title: daysLeft == 1 ? L("Último día de prueba") : L("Quedan %d días de prueba", daysLeft), body: TrialTexts.reminderBody(daysLeft: daysLeft, endDate: trial.endDateText))
     }
 
     /// Ventana de activación: con la prueba vencida no se cierra (solo se activa o se sale).

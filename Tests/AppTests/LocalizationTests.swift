@@ -51,9 +51,12 @@ final class LocalizationTests: XCTestCase {
         let bundle = try XCTUnwrap(Bundle(path: root.appendingPathComponent("Resources/en.lproj").path))
         Localization.bundle = bundle
         defer { Localization.bundle = .main }
-        XCTAssertEqual(TrialTexts.banner(.trial(daysLeft: 30)), "Trial version · 30 days left · Premium: 10 USD")
+        XCTAssertEqual(TrialTexts.banner(.trial(daysLeft: 30)), "Trial version · 30 of 90 days left · Premium: 10 USD")
         XCTAssertEqual(TrialTexts.banner(.lastDays(daysLeft: 3)), "3 days of trial left · Premium: 10 USD")
-        XCTAssertTrue(TrialTexts.welcomeBody.contains("February 9, 2027") && TrialTexts.welcomeBody.contains("10 USD"))
+        let welcome = TrialTexts.welcomeBody(endDate: "February 8, 2027")
+        XCTAssertTrue(welcome.contains("90 days") && welcome.contains("February 8, 2027") && welcome.contains("10 USD"))
+        XCTAssertTrue(TrialTexts.reminderBody(daysLeft: 5, endDate: "X").hasPrefix("5 days are left"))
+        XCTAssertEqual(TrialTexts.endLine(endDate: "February 8, 2027"), "The 90-day trial ends on February 8, 2027")
         XCTAssertEqual(TrialTexts.message(for: .wrongApp), "That key is for another app.")
         XCTAssertEqual(ConvoyError.trialExpired.localizedDescription, "The trial period has ended. Activate Convoy premium to create projects.")
         XCTAssertEqual(L("Destino fijado por un enlace: %@", "/x"), "Destination set by a link: /x")

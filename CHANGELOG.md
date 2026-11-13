@@ -1,5 +1,11 @@
 # Cambios
 
+## 0.2.1 — Prueba de 90 días por persona
+- **El periodo de prueba ahora dura 90 días por persona**, contados desde la primera vez que abres Convoy; ya no hay una fecha de fin para todos. Quienes usaban la 0.2.0 reciben 90 días completos desde el momento en que actualizan.
+- Los avisos muestran la fecha de fin calculada para ti: bienvenida («úsala gratis durante 90 días (hasta el …)»), línea permanente «Versión de prueba · quedan N días de 90 · Premium: 10 USD», recordatorios de los últimos 14 días y sección «Licencia» de Ajustes. Todo en español e inglés.
+- El primer uso se guarda en dos lugares independientes (preferencias y un archivo pequeño en Application Support) y se usa el más antiguo; si falta uno, se recrea desde el otro. Un valor en el futuro se descarta y retrasar el reloj no revive la prueba. Es un freno razonable, no DRM: quien borre todo reinicia la prueba.
+- Sin cambios en el bloqueo al vencer, la licencia (ECDSA P-256, sin internet) ni las correcciones de seguridad H1–H3. Pruebas nuevas: fronteras día 90/91, redundancia del primer uso, migración, primer uso en el futuro, reloj atrás y cambios de zona horaria/horario de verano.
+
 ## 0.2.0 — Periodo de prueba y correcciones de seguridad
 - **Periodo de prueba (tester) hasta el 9 de febrero de 2027.** Convoy es gratis durante este periodo; después, cada app costará 10 USD (pago único). Aviso de bienvenida en el primer arranque (una sola vez), línea discreta «Versión de prueba · quedan N días · Premium: 10 USD» en la ventana y en el menú del ícono, y un recordatorio al día en los últimos 14 días.
 - **Activación con clave de licencia**, verificada sin internet (firma ECDSA P-256). Ventana «El periodo de prueba terminó» con «Obtener premium», campo de clave y «Salir»; sección «Licencia» en Ajustes (estado, fin de la prueba, activar y quitar licencia). Con la prueba vencida no se crean proyectos, ni se importan plantillas ni se aplican enlaces `convoy://`; las plantillas y los archivos del usuario no se tocan ni se pierden. Retrasar el reloj no reactiva la prueba. La app solo abre la página de compra en el navegador; no hay otra conexión de red.

@@ -32,8 +32,10 @@ final class ModelTests: XCTestCase {
         Calendar.current.date(from: DateComponents(year: y, month: m, day: d, hour: h))!
     }
     var opened: [URL] = []
-    func makeTrial(now: Date = ModelTests.date(2026, 12, 1), store: KeyValueStore = MemoryStore()) -> TrialController {
-        TrialController(manager: TrialManager(store: store, now: { now }), opener: { _ in })
+    /// `first`: primer uso de la persona; por defecto, 1 de diciembre de 2026 (el mismo día que `now`).
+    func makeTrial(now: Date = ModelTests.date(2026, 12, 1), first: Date? = nil, store: KeyValueStore = MemoryStore()) -> TrialController {
+        store.set(String((first ?? ModelTests.date(2026, 12, 1)).timeIntervalSince1970), forKey: TrialManager.firstLaunchKey)
+        return TrialController(manager: TrialManager(store: store, backup: MemoryStore(), now: { now }), opener: { _ in })
     }
 
     func makeModel(trial: TrialController? = nil, validator: DestinationValidator = DestinationValidator()) -> AppModel {
@@ -225,7 +227,7 @@ final class ModelTests: XCTestCase {
     }
 
     func testExpiredTrialBlocksCreationWithoutTouchingDiskAndNotifies() async throws {
-        let m = makeModel(trial: makeTrial(now: Self.date(2027, 2, 10)))
+        let m = makeModel(trial: makeTrial(now: Self.date(2027, 3, 1)))
         var notified = false
         m.onTrialExpired = { notified = true }
         m.projectName = "No debe crearse"
@@ -233,7 +235,7 @@ final class ModelTests: XCTestCase {
         XCTAssertTrue(notified)
         XCTAssertEqual(try fm.contentsOfDirectory(atPath: dest.path), [])
         XCTAssertEqual(m.message, ConvoyError.trialExpired.localizedDescription)
-        let t = makeTrial(now: Self.date(2027, 2, 9))
+        let t = makeTrial(now: Self.date(2027, 2, 28))
         let ok = makeModel(trial: t); ok.projectName = "Sí se crea"
         await ok.create()
         XCTAssertTrue(fm.fileExists(atPath: dest.appendingPathComponent("Sí se crea").path))

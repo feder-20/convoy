@@ -21,7 +21,7 @@ final class TrialController {
     }
 
     static func live() -> TrialController {
-        TrialController(manager: TrialManager(store: UserDefaultsStore()), opener: { NSWorkspace.shared.open($0) })
+        TrialController(manager: TrialManager(store: UserDefaultsStore(), backup: FileKeyValueStore.standard()), opener: { NSWorkspace.shared.open($0) })
     }
 
     var gate: ExecutionGate { LicenseGate(manager: manager) }
@@ -41,5 +41,6 @@ final class TrialController {
 
     func removeLicense() { manager.removeLicense(); refresh() }
 
-    var trialEndText: String { L("Fin de la prueba: 9 de febrero de 2027") }
+    var endDateText: String { TrialTexts.formatDate(manager.endDate) }
+    var trialEndText: String { TrialTexts.endLine(endDate: endDateText) }
 }

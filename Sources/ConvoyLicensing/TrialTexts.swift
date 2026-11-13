@@ -6,7 +6,7 @@ public enum TrialTexts {
     public static func banner(_ state: TrialState) -> String? {
         switch state {
         case .licensed, .expired: return nil
-        case .trial(let d): return tr("Versión de prueba · quedan %d días · Premium: %@", d, LicenseConstants.priceText)
+        case .trial(let d): return tr("Versión de prueba · quedan %d días de %d · Premium: %@", d, LicenseConstants.trialDays, LicenseConstants.priceText)
         case .lastDays(let d):
             return d == 1 ? tr("Último día de prueba · Premium: %@", LicenseConstants.priceText)
                           : tr("Quedan %d días de prueba · Premium: %@", d, LicenseConstants.priceText)
@@ -23,13 +23,25 @@ public enum TrialTexts {
     }
 
     public static var welcomeTitle: String { tr("Estás usando una versión de prueba (tester)") }
-    public static var welcomeBody: String {
-        tr("Convoy está en periodo de prueba hasta el 9 de febrero de 2027. Es gratis durante este periodo y nos ayudas a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.")
+    /// Fecha larga con la región del usuario (el calendario trae la zona horaria).
+    public static func formatDate(_ date: Date, calendar: Calendar = .autoupdatingCurrent, locale: Locale = .autoupdatingCurrent) -> String {
+        let f = DateFormatter()
+        f.locale = locale
+        f.calendar = calendar
+        f.timeZone = calendar.timeZone
+        f.dateStyle = .long
+        f.timeStyle = .none
+        return f.string(from: date)
     }
-    public static func reminderBody(daysLeft: Int) -> String {
-        daysLeft == 1 ? tr("Hoy es el último día del periodo de prueba de Convoy. Después, la versión premium cuesta 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.")
-                      : tr("Quedan %d días del periodo de prueba de Convoy. Después, la versión premium cuesta 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.", daysLeft)
+
+    public static func welcomeBody(endDate: String) -> String {
+        tr("Convoy está en periodo de prueba: úsala gratis durante 90 días (hasta el %@) y ayúdanos a mejorarla. Después, cada app costará 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.", endDate)
     }
+    public static func reminderBody(daysLeft: Int, endDate: String) -> String {
+        daysLeft == 1 ? tr("Hoy es el último día del periodo de prueba de Convoy (hasta el %@). Después, la versión premium cuesta 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.", endDate)
+                      : tr("Quedan %d días del periodo de prueba de Convoy (hasta el %@). Después, la versión premium cuesta 10 USD (pago único). Tus archivos nunca se tocan ni se pierden.", daysLeft, endDate)
+    }
+    public static func endLine(endDate: String) -> String { tr("La prueba de 90 días termina el %@", endDate) }
 
     public static func message(for error: LicenseError) -> String {
         switch error {
